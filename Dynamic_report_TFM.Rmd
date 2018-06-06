@@ -1,0 +1,935 @@
+---
+title: "Dynamic Report - TFM"
+author: "Marta Sanchez Delgado"
+date: '`r format(Sys.Date(),"%e de %B, %Y")`'
+output:
+  html_document:
+    fig_caption: yes
+    number_sections: yes
+    toc: yes
+geometry: margin=1in
+params:
+  file1: NUMTs_coord.csv
+  file2: GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_median_tpm.gct
+header-includes:
+- \usepackage{float}
+- \usepackage[most]{tcolorbox}
+- \definecolor{light-yellow}{rgb}{1, 0.95, 0.7}
+- \newtcolorbox{myquote}{colback=light-yellow,grow to right by=-10mm,grow to left
+  by=-10mm, boxrule=0pt,boxsep=0pt,breakable}
+- \newcommand{\INSTRUCTIONS}[1]{\begin{myquote} \textbf{IMPORTANT:} \emph{#1} \end{myquote}}
+linkcolor: blue
+classoption: a4paper
+bibliography: Ref_TFM.bib
+urlcolor: blue
+---
+
+```{r setup, echo=FALSE, include=TRUE}
+# General knitr options for RMarkdown ----
+knitr::opts_chunk$set(external=TRUE, warning=FALSE, message=FALSE,
+                      fig.align='center', fig.pos='H')
+```
+
+
+```{r echo=FALSE, eval=FALSE, include=FALSE}
+# Setting working directory ----
+## IN R-STUDIO:
+### Session --> Set working directory --> Choose directory 
+## WORKING DIRECTORY (THIS FOLDER):
+library(rstudioapi)
+current_path <- getActiveDocumentContext()$path 
+setwd(dirname(current_path))
+getwd() # to show the pathway
+
+```
+
+\newpage
+
+# Initial instructions
+
+## Downloading expression file from GTEx
+
+The first step to correctly generate all expression information from your initial coordinates is to download the **`GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_median_tpm.gct`** file from: https://gtexportal.org/home/datasets. Gene expression on the GTEx Portal are shown in Transcripts per Million (TPM), and the samples come from the 1000 genomes project. The downloaded file contains median gene counts (in TPM) by tissue (53 in total).
+
+## General instructions to update input file
+
+All R-scripts are in the first part of the document **`Scripts-TFM.R`**. However, the corresponding **`Dynamic report-TFM.Rmd`** can be used to generate the new set of output files automatically.
+
+\INSTRUCTIONS{ Fist read `Dynamic report-TFM.pdf` for \textbf{`input file format`}. Then, you need to copy your input document in the folder containing `Dynamic report-TFM.Rmd` and indicate in the next lines your input CVS file name.}
+
+To change the **input file** you need to change the name of the .csv (`r params$file1`) document in the begining of this document:
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics{file1.png}
+	\caption[\textbf{Screenshot instruction to change the name of the \textbf{`input file`}.}]
+	{\textbf{Screenshot instruction to change the name of the \textbf{`input file`}.} In the begining of the document you have the `params` subsection, the `file1:` corresponds to the `input file` with the initial coordinates.}
+\end{figure}
+
+Now all the output files and all the information on `Dynamic report-TFM` documents will be generated with your new .csv data-table named `r params$file1`.
+
+\INSTRUCTIONS{ Once you have done this first step, you can generate your new .html, which will have all data updated by pressing `Knit` (See next figure). Maybe this will take more than an hour.}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics{Screenshot_Instruction2.png}
+	\caption[\textbf{Screenshot instruction for generate the new .html file.}]
+	{\textbf{Screenshot instruction for generate the new .html file.} In RStudio, by using R Markdown, we can generate the corresponding .html file by pression `Knit` (in the upper-left part of the first square in RStudio).}
+\end{figure}
+
+The following pages will be generated with the new information. Now you have all data, statistics and tables updated with the coordinates in document `r  params$file1`.
+
+\newpage
+
+# Context
+
+The following scripts were generated for the final master's project in Bioinformatics and Biostatistics (_Universitat Oberta de Catalunya_) entitle **_Are Nuclear Insertions of Mitochondrial Origin Pseudogenes?_**.
+
+This Master’s project focussed on the study of Nuclear mitochondrial DNA sequences (NUMTs). NUMTs are the result of a continuous DNA transfer from mitochondria to the nucleus [@van1982similar; @tsuzuki1983presence]. 
+
+In 2011, in a published work led by Dr Cristina Santos, it was identified 755 NUMTs in the human genome [@ramos2011nuclear]. They compared the human mtDNA (NC_012920) against human genome (GRCh37/hg19 assembly), and they described different aspects of this comparisons: frequency, distribution and size of NUMTs for each chromosome; % identity between NUMTs and mtDNA sequence… Based on this information and **NUMTs coordinates**, in the present master’s final project, we want to clarify whether or not these NUMTs origin pseudogenes. 
+
+The present dynamic report generates a set of intermediate (.txt documents) and a final file called **FINAL_OUTPUT_TABLE.txt** with all relevant genetic content and with a more in-depth expression and gene ontology study in the genes encoded in this NUMTs. Additionally, we also perform a small conservation study of these regions in the genome of other primates. By changing the **input document**, and following the next instruction, it is possible to generate a new set of intermediate and final documents with the new outputs.
+
+
+# Visualization of NUMTs in UCSC genome browser
+
+First of all, with the NUMTs coordinates publically available by @ramos2011nuclear, we created the file `bed_NUMTs-ID.txt`, which can be uploaded to **_UCSC genome browser --> custom track_** to visualise our NUMTs.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics{user_track.png}
+	\caption[\textbf{Custom Track\: NUMNTs visualization in UCSC Genome Browser.}]
+	{\textbf{Custom Track\: NUMNTs visualization in UCSC Genome Browser}. The first track on the picture is our Custom Track from the document "bed\_NUMTs\-ID.txt".}
+\end{figure}
+
+The `bed_NUMTs-ID.txt` also include the corresponding mitochondrial regions for each NUMT, with the same NUMT ID by adding "mt" in the beginning.
+
+\newpage
+
+# Installing only packages we need
+
+Depending on the computer and session, we already have some R packages installed. To install only the ones we need we will use the following script:
+
+```{r echo=TRUE, eval=TRUE, include=TRUE}
+######## PART 1: Scripts from Dynamic_report_TFM.Rmd ##########
+
+# Installing package if needed ----
+list.of.packages <- c("rstudioapi", "dplyr", "xlsx", "rJava", "gplots",
+                      "devtools", "ggplot2")
+new.packages <- list.of.packages[!(list.of.packages %in% 
+                                     installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+```
+
+However, to generate our data, we also need to download special packages from Bioconductor:
+
+```{r echo=TRUE, eval=TRUE, include=FALSE}
+# Conneting with Bioconductor ----
+source("https://bioconductor.org/biocLite.R")
+```
+
+\INSTRUCTIONS{ If you cannot install Bioconductor's \textbf{biomaRt} package by using \textbf{`biocLite("biomaRt")`}, in Linux, if you have  administrative privileges, you can write in the command line: \textbf{`sudo apt-get install r-bioc-biomart`} to install it.}
+
+```{r echo=TRUE, eval=TRUE, include=FALSE}
+# Installing & loading Bioconductor packages ----
+biocLite()
+biocLite("biomaRt")
+## If biocLite("biomaRt") do not work:
+### LINUX COMAND LINE: sudo apt-get install r-bioc-biomart
+```
+
+\newpage
+
+# Input file format
+
+The document must be .csv with `comma (",")` separator, which is the one automatically used in most programmes like Excel or LibreOffice Calc when we save the data as .csv. The first line of the document will be the **Column names**. The First column will name as `id` (with any ID you wanted to use), second column `chr` (with the number of the corresponding chromosome), third `start_n` with the starting bp coordinate and then `end_n` with the end pb coordinate. The last three columns will be additional information. In the case of the original document created for this final master's project corresponds to the coordinates mapping these regions in the mitochondrial: 6th column  entitle `mt` and in all cases "mt" because is how mitochondrial DNA is recognised, and then both, initial `start_mt` and final `end_mt` coordinates in the mitochondrial DNA.
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+# Uploading .csv input file ----
+numts_coord <- read.csv(file=params$file1, sep = ",", header = TRUE)
+str(numts_coord, vec.len = 1)
+head(numts_coord)
+```
+
+The file `r  params$file1` contains a total of  `r nrow(numts_coord)` rows with coordinates.
+
+\newpage
+
+# All intermediate files and the final table
+
+## File 1 and 2: "All_attributes.txt" & "All_filters.txt"
+
+To download the list of genes within our initial coordinates and its associated phenotype description, gene ontology (GO) and conservation in other species, we use `biomaRt` package from `Bioconductor`:  
+
+### The `biomaRt` package
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+# The biomaRt package ----
+library("biomaRt")
+citation("biomaRt") # Package citation
+```
+
+### Preparing Package ‘biomaRt'
+
+We set up the dataset we will use, specifically, `ensembl_MART_ensembl`, which is working with the version:
+
+```{r echo=FALSE, eval=TRUE, include=FALSE, message=FALSE}
+## Preparing Package ‘biomaRt'
+gene_mart = useMart(biomart="ENSEMBL_MART_ENSEMBL", 
+                    host="grch37.ensembl.org", 
+                    path="/biomart/martservice", 
+                    dataset="hsapiens_gene_ensembl")
+
+listMarts(gene_mart) # ensembl version used
+```
+
+It is automatically generated the first two files: `All_attributes.txt` (with all attributes you can download with `biomaRt` package) and `All_filters.txt` (with all `filters` to select the information to use from your input file).
+
+```{r echo=FALSE, eval=TRUE, include=TRUE, message=FALSE}
+## Creating "All_attributes.txt" and "All_filters.txt" with all options:
+All_attributes <- listAttributes(gene_mart)
+All_filters <- listFilters(gene_mart)
+
+```
+
+The dimensions of File 1 are: `r dim(All_attributes)` and the dimensions of File 2: `r dim(All_filters)`
+
+```{r echo=FALSE, eval=TRUE, include=FALSE, message=FALSE}
+write.table(All_attributes, file = "All_attributes.txt", sep = "\t", 
+            row.names = FALSE, quote = FALSE)
+write.table(All_filters, file = "All_filters.txt", sep = "\t", 
+            row.names = FALSE, quote = FALSE)
+```
+
+\newpage
+
+## File 3: "gene_results.txt"
+
+Filtering by our initial coordinates, we create the file `gene_results.txt` with all genes which coordinates and our initial coordinates overlaps partially or totally.
+
+```{r echo=FALSE, eval=TRUE, include=FALSE, message=FALSE}
+# Extracting all genes within NUMTs coordinates ----
+library(plyr); library(dplyr)
+
+## Adapting coordenates to download attributes
+numts_coord$coord_n <- do.call(paste, c(numts_coord[,2:4], sep = ":"))
+numts_vector <-as.vector(t(numts_coord$coord_n))
+id <-as.vector(t(numts_coord$id))
+
+## Setting attributes and filters
+### Our attributes
+attributes_gene = c("chromosome_name", "start_position", "end_position", "strand",
+                    "hgnc_symbol", "ensembl_gene_id_version","ensembl_gene_id",
+                    "transcript_count")
+
+## Getting values: gene_results.txt (loop)
+
+gene_results <- numeric(0)
+i <- 1
+
+for (i in 1:length(numts_vector)) {
+  b<-i
+  
+  gene_results_b = getBM(attributes_gene,
+                         filters = c("chromosomal_region"),
+                         values = list(chromosomal_region=numts_vector[b]), 
+                         mart = gene_mart)
+  
+  if (length(gene_results_b[,1]) == 0) {
+    gene_results <- rbind(gene_results, c(rep("", length(attributes_gene)),
+                                          do.call(paste, list(numts_coord[b,1]))))
+  } else {
+    gene_results_b$id <- do.call(paste, list(numts_coord[b,1]))
+    gene_results <- rbind(gene_results, gene_results_b)
+  }
+  
+  i <- i + 1
+}
+
+gene_results[gene_results==""]  <- NA 
+
+## Reordering columns (gene_results.txt) 
+
+gene_results <- gene_results %>% dplyr::select("id", everything())
+
+## Sorting results (gene_results.txt)
+gene_results <- gene_results[order(gene_results$id, 
+                                   gene_results$chromosome_name,
+                                   gene_results$start_position),]
+
+## Saving the results (gene_results.txt)
+write.table(gene_results, file = "gene_results.txt", sep = "\t",
+            quote = FALSE, row.names = FALSE)
+```
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+## Uploading intermediate documents
+gene_results <- read.table("gene_results.txt", header = TRUE, sep = "\t")
+summary(gene_results)
+```
+The dimensions of File 3 are: `r dim(gene_results)` 
+
+In total, `gene_results.txt` contains `r length(as.character(na.omit(unique(gene_results$ensembl_gene_id_version))))` genes and `r sum(is.na(gene_results$ensembl_gene_id_version))`/`r nrow(numts_coord)` NUMTs do not overlap with any gene.
+
+## File 4 and 5: "up_gene_results.txt" and "down_gene_results.txt"
+
+Genes in `gene_results.txt` also includes large gene coding proteins where the NUMTs are probably located in intronic regions. To eliminate this genes, an additional two other lists were generated with new coordinates obtained from the upstream or downstream part of the original NUMTs coordinates (between 100 - 1000 bp from the initial coordinates). Once we get this two new list of genes associated to different NUMTs, we eliminate from the initial list in `gene_results.txt` that genes also present upstream AND downstream the initial coordinates. However, we ALWAYS associated gene with NUMTs, and also those genes associated to specific NUMT is eliminate (to conserve genes which includes more than one NUMT).
+
+```{r echo=FALSE, eval=TRUE, include=FALSE}
+# Extracting all genes upstream and downstream from the NUMTs coordinates ----
+library(plyr); library(dplyr)
+  
+  ## Indicating new coordinates
+up_start <- numts_coord[3] - 1000 
+up_end <- numts_coord[3] - 100 
+down_start <- numts_coord[4] + 100 
+down_end <- numts_coord[4] + 1000
+
+up_numts_coord <- data.frame(numts_coord$id, 
+                             numts_coord$chr, 
+                             up_start, 
+                             up_end)
+down_numts_coord <- data.frame(numts_coord$id, 
+                               numts_coord$chr, 
+                               down_start, 
+                               down_end)
+
+  ## Adapting coordenates to download attributes
+up_numts_coord$coord_n <- do.call(paste, c(up_numts_coord[,2:4], sep = ":"))
+up_numts_vector <-as.vector(t(up_numts_coord$coord_n))
+down_numts_coord$coord_n <- do.call(paste, c(down_numts_coord[,2:4], sep = ":"))
+down_numts_vector <-as.vector(t(down_numts_coord$coord_n))
+
+## Getting values: up_gene_results.txt (loop)
+
+up_gene_results <- numeric(0)
+i <- 1
+
+for (i in 1:length(up_numts_vector)) {
+  b<-i
+  
+  up_gene_results_b = getBM(attributes_gene,
+                         filters = c("chromosomal_region"),
+                         values = list(chromosomal_region=up_numts_vector[b]), 
+                         mart = gene_mart)
+  
+  if (length(up_gene_results_b[,1]) == 0) {
+    up_gene_results <- rbind(up_gene_results, 
+                             c(rep("", length(attributes_gene)), 
+                               do.call(paste, list(numts_coord[b,1]))))
+  } else {
+    up_gene_results_b$id <- do.call(paste, list(numts_coord[b,1]))
+    up_gene_results <- rbind(up_gene_results, up_gene_results_b)
+  }
+  
+  i <- i + 1
+}
+
+up_gene_results[up_gene_results==""]  <- NA 
+
+### Reordering columns (up_gene_results.txt) 
+up_gene_results <- up_gene_results %>%  dplyr::select("id", everything())
+
+### Sorting results (up_gene_results.txt)
+up_gene_results <- up_gene_results[order(up_gene_results$id,
+                                         up_gene_results$chromosome_name,
+                                         up_gene_results$start_position),]
+
+### Saving the results (up_gene_results.txt)
+write.table(up_gene_results, file = "up_gene_results.txt", sep = "\t",
+            quote = FALSE, row.names = FALSE)
+
+
+## Getting values: down_gene_results.txt (loop)
+
+down_gene_results <- numeric(0)
+i <- 1
+
+for (i in 1:length(down_numts_vector)) {
+  b<-i
+  
+  down_gene_results_b = getBM(attributes_gene,
+                         filters = c("chromosomal_region"),
+                         values = list(chromosomal_region=down_numts_vector[b]), 
+                         mart = gene_mart)
+  
+  if (length(down_gene_results_b[,1]) == 0) {
+    down_gene_results <- rbind(down_gene_results, 
+                             c(rep("", length(attributes_gene)), 
+                               do.call(paste, list(numts_coord[b,1]))))
+  } else {
+    down_gene_results_b$id <- do.call(paste, list(numts_coord[b,1]))
+    down_gene_results <- rbind(down_gene_results, down_gene_results_b)
+  }
+  
+  i <- i + 1
+}
+
+down_gene_results[down_gene_results==""]  <- NA 
+
+### Reordering columns (down_gene_results.txt) 
+down_gene_results <- down_gene_results %>% dplyr::select("id", everything())
+
+### Sorting results (down_gene_results.txt)
+down_gene_results <- down_gene_results[order(down_gene_results$id, 
+                                             down_gene_results$chromosome_name,
+                                             down_gene_results$start_position),]
+
+### Saving the results (down_gene_results.txt)
+write.table(down_gene_results, file = "down_gene_results.txt", sep = "\t",
+            quote = FALSE, row.names = FALSE)
+```
+
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+## Uploading intermediate documents
+up_gene_results <- read.table("up_gene_results.txt", header = TRUE, sep = "\t")
+str(up_gene_results, vec.len = 1)
+
+down_gene_results <- read.table("down_gene_results.txt", header = TRUE, sep = "\t")
+str(down_gene_results, vec.len = 1)
+
+# Extracting genes originated by NUMT insertions ----
+## Total genes
+TOTAL_GENES <- as.character(na.omit(unique(gene_results$ensembl_gene_id_version)))
+UP_GENES <- as.character(na.omit(unique(up_gene_results$ensembl_gene_id_version)))
+DOWN_GENES <- as.character(na.omit(unique(down_gene_results$ensembl_gene_id_version)))
+```
+
+In the upstream part of NUMTs coordinates we find `r length(UP_GENES)` and in the downstream region `r length(DOWN_GENES)` genes. Once we have the three list of genes, we wanted to compare all of them and select the ones originated by a NUMT insertion.
+
+The dimensions of File 4 are: `r dim(up_gene_results)` and the dimensions of File 5: `r dim(down_gene_results)`
+
+## File 6: "genes.txt"
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+## Common genes present in all three list of genes  
+## (gene_results, upstream and downstream)
+library(plyr); library(dplyr)
+data_joined <- dplyr::inner_join(up_gene_results, down_gene_results)
+
+## Creating column "Localization"
+data_joined$localization <- data_joined$ensembl_gene_id
+data_joined$localization[!is.na(data_joined$localization)] <- "intronic"
+data_joined$localization[is.na(data_joined$localization)] <- "intergenic"
+
+## Genes in gene_results.txt but not in upper and downstream regions
+int_gene_results <- anti_join(gene_results, data_joined)
+```
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+## Saving genes.txt
+genes <- as.character(na.omit(unique(int_gene_results$ensembl_gene_id)))
+
+write.table(genes, file="genes.txt",col.names = F, sep="\t",quote=F,row.names=F)
+```
+
+The distribution of the genes within NUMTs in the different chromosomes is:
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+## Uploading intermediate documents
+genes <- read.table("genes.txt", header = FALSE, sep = "\t")
+
+table_numts_genes <- gene_results[gene_results$ensembl_gene_id
+                                  %in% genes$V1,]
+
+chrom <- (unique(table_numts_genes[c(2,7)]))
+
+# Number of genes per chromosome
+table(chrom[1])
+```
+
+Of the `r length(TOTAL_GENES)` initial genes, after our filtering, we have `r nrow(genes)` genes within the initial input coordinates. 
+
+The dimensions of File 6 are: `r dim(genes)` 
+
+## File 7: "go_results.txt"
+
+```{r echo=FALSE, eval=TRUE, include=FALSE}
+# GO terms (go_results.txt) ----
+## Setting attributes and filters
+ ### Our attributes
+attributes_go = c("hgnc_symbol", "ensembl_gene_id_version",
+                  "go_id", "name_1006", "definition_1006")
+
+go_results = getBM(attributes_go,
+                   filters = c("ensembl_gene_id"),
+                   values = list(ensembl_gene_id=genes$V1), 
+                   mart = gene_mart)
+
+go_results[go_results==""]  <- NA 
+
+go_results <- go_results[order(go_results$ensembl_gene_id_version, go_results$go_id),]
+
+go_results <- go_results[complete.cases(go_results$name_1006), ]
+
+write.table(go_results, file = "go_results.txt", sep = "\t",
+            quote = FALSE, row.names = FALSE)
+```
+
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+go_results <-read.table("go_results.txt", header = TRUE, sep = "\t")
+go_results[c(1:4)]
+```
+
+Only `r length(unique(go_results$ensembl_gene_id))` of the `r nrow(genes)` genes originated by NUMTs insertion are anotated in [Gene Ontology Consortium](http://www.geneontology.org/). However, as we can see in Figure 3, they are associated with different GO terms. 
+
+```{r echo=FALSE, eval=TRUE, include=TRUE, fig.cap= "GO terms annotated for our list of genes."}
+## Plotting GO results 
+par(mfrow=c(1,2))
+par(mar = c(8.5, 2.5, 2.5, 4), xpd=TRUE)
+
+ensembl_go <- na.omit(unique(go_results[c("hgnc_symbol", "name_1006")]))
+
+ensembl_go <- ensembl_go[complete.cases(ensembl_go), ]
+
+colors = c("aquamarine3","yellow2","azure3", 
+          "darkgoldenrod1", "lawngreen", "plum",
+          "gray9","deeppink1","cornflowerblue", 
+          "antiquewhite3", "slategrey", "tomato")
+
+### Bar plot
+barplot(table(ensembl_go$name_1006), las=2, cex.main = 1.2,
+        cex.axis = 0.7, cex = 0.7,  col = colors)
+
+
+### pie chart
+counts = table(ensembl_go$name_1006)  ## get counts
+labs = paste(levels(ensembl_go$name_1006), counts)  ## create labels
+pie(counts, labels = labs, col = colors, cex=0.5)  ## plot
+legend("bottom", inset=c(0,-0.6), labs, cex=0.6, fill=colors)
+```
+The dimensions of File 7 are: `r dim(go_results)` 
+
+## File 8: "phenotype_results.txt"
+
+```{r echo=FALSE, eval=TRUE, include=FALSE}
+# phenotype_results.txt ----
+## Setting attributes and filters
+### Our attributes
+attributes_phenotype = c("hgnc_symbol", "ensembl_gene_id_version", "transcript_count",
+                         "gene_biotype", "description")
+
+## Getting values: phenotype_results ----
+
+phenotype_results = getBM(attributes_phenotype,
+                              filters = c("ensembl_gene_id"),
+                              values = list(ensembl_gene_id=genes$V1),
+                              mart = gene_mart)
+
+# class(phenotype_results) # data.frame
+phenotype_results[phenotype_results==""]  <- NA 
+
+phenotype_results <- phenotype_results[order(phenotype_results$ensembl_gene_id_version),]
+
+write.table(phenotype_results, file = "phenotype_results.txt", sep = "\t",
+            quote = FALSE, row.names = FALSE)
+
+```
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+## Uploading intermediate documents
+phenotype_results <-read.table("phenotype_results.txt", 
+                               header = TRUE, sep = "\t")
+summary(phenotype_results)
+```
+
+```{r echo=FALSE, eval= TRUE, fig.cap= "Gene biotype annotated for our list of genes."}
+## Plotting Gene biotype results 
+par(mfrow=c(1,2))
+par(mar = c(6, 2.5, 2.5, 2.5), xpd=TRUE)
+
+ensembl_biotype <- na.omit(unique(phenotype_results[c("ensembl_gene_id_version", 
+                                                      "gene_biotype")]))
+
+colors = c("yellow2","orchid3","orangered3", 
+          "olivedrab3", "lightskyblue3", "plum")
+
+### Bar plot
+barplot(table(ensembl_biotype$gene_biotype), las=2, cex.main = 1.2, 
+        cex.axis = 0.7, cex = 0.7,  col = colors)
+
+### pie chart
+counts = table(ensembl_biotype$gene_biotype)  ## get counts
+labs = paste(levels(ensembl_biotype$gene_biotype), counts)  ## create labels
+pie(counts, labels = labs, col = colors, cex=0.5)  ## plot
+legend("bottom", inset=c(0, -0.2), labs, cex=0.6, fill=colors)
+```
+
+
+For the `r nrow(genes)` whithin our NUMTs, `r nrow(ensembl_biotype)`
+
+`r if(nrow(genes) > nrow(ensembl_biotype)){"As we can see in the graphs, not all genes within our coordinates are annotated in ensembl-Biotype"}``r if(nrow(genes) == nrow(ensembl_biotype)){"In this case, all genes within our NUMTs are classified in ensembl-Biotype"}`
+
+The dimensions of File 8 are: `r dim(phenotype_results)` 
+
+## File 9: "mean_tpm_GTEx.txt"
+
+We then search in `GTEx_Analysis_2016-01-15_v7_RNASeQCv1.1.8_gene_median_tpm.gct` document our list of genes included in `genes.txt`.
+
+Initially, we save all data existing for all our genes and calculate the mean and total TGM per gene.
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+# EXPRESSION STUDY ----
+## Uploading GTEx means in TPM
+GTEx_mean_tpm <- 
+  read.table(file = params$file2, skip = 2, 
+             header = TRUE, sep = "\t")
+```
+
+```{r echo=FALSE, eval=TRUE, include=FALSE}
+## Creating mean_tpm_GTEx.txt
+library(plyr); library(dplyr)
+
+GTEx_tpm <- GTEx_mean_tpm
+colnames(GTEx_tpm)[1] <- "GTEx_gene_id_version"
+
+gene_id <- GTEx_mean_tpm$gene_id
+GTEx_genes <- numeric(0)
+for (i in 1:length(GTEx_mean_tpm$gene_id)){
+    x <- unlist(strsplit(as.character(GTEx_mean_tpm[i,1]), split='.', fixed=TRUE))[1]
+    GTEx_genes <- rbind(GTEx_genes, x)
+}
+
+GTEx_mean_tpm$gene_id <- GTEx_genes
+
+mean_tpm_fromGTEx <- numeric(0)
+for (i in 1:nrow(genes)){
+    y <- subset(GTEx_mean_tpm, gene_id == genes[i,1])
+    mean_tpm_fromGTEx <- rbind(mean_tpm_fromGTEx, y)
+}
+
+tissue_means <- rowMeans(mean_tpm_fromGTEx[,3:length(mean_tpm_fromGTEx)])
+mean_tpm_fromGTEx$tissue_means <- tissue_means
+
+mean_tpm_fromGTEx$sum <- rowSums(mean_tpm_fromGTEx[,3:length(mean_tpm_fromGTEx)])
+
+mean_tpm_fromGTEx$gene_id <- as.character(mean_tpm_fromGTEx$gene_id)
+
+mean_tpm_GTEx <- dplyr::inner_join(mean_tpm_fromGTEx,
+                                GTEx_tpm)
+
+mean_tpm_GTEx <- mean_tpm_GTEx %>% dplyr::select("gene_id", "GTEx_gene_id_version",
+                                                 everything())
+colnames(mean_tpm_GTEx)[1] <- "ensembl_gene_id"
+str(mean_tpm_GTEx)
+
+# Saving results
+write.table(mean_tpm_GTEx, file = "mean_tpm_GTEx.txt", sep = "\t",
+            quote = FALSE, row.names = FALSE)
+```
+
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+## Uploading intermediate documents
+mean_tpm_GTEx <- read.table("mean_tpm_GTEx.txt", header = TRUE, 
+                                sep = "\t", dec = ".")
+```
+
+The dimensions of File 9 are: `r dim(mean_tpm_GTEx)`
+
+## File 10: "subset_expressed.txt"
+
+In `nrow(mean_tpm_GTEx).txt` document, for the `r nrow(genes)` within our initial coordinates, `r nrow(mean_tpm_GTEx)` have expression data in GTEx Portal. However, some of them are not expressed in any tissue. To subset the expressed genes, we will create an additional table containging genes with > 0.5 TMP in at least, one tissue:
+
+```{r echo=FALSE, eval=TRUE, include=FALSE}
+# subset_expressed.txt ----
+## Creating subset of genes with >= 0.5 TPM (expressed)
+GTEx <- mean_tpm_GTEx
+subset_expressed <- subset(GTEx, GTEx[4] >= 0.5 | GTEx[5] >= 0.5 | GTEx[6] >= 0.5 |
+                             GTEx[7] >= 0.5 | GTEx[8] >= 0.5 | GTEx[9] >= 0.5 | 
+                             GTEx[10] >= 0.5 |GTEx[11] >= 0.5 | GTEx[12] >= 0.5 | 
+                             GTEx[13] >= 0.5 | GTEx[14] >= 0.5 | GTEx[15] >= 0.5 | 
+                             GTEx[16] >= 0.5 | GTEx[17] >= 0.5 | GTEx[18] >= 0.5 |
+                             GTEx[19] >= 0.5 | GTEx[20] >= 0.5 | GTEx[21] >= 0.5 | 
+                             GTEx[22] >= 0.5 | GTEx[23] >= 0.5 | GTEx[24] >= 0.5 | 
+                             GTEx[25] >= 0.5 | GTEx[26] >= 0.5 | GTEx[27] >= 0.5 | 
+                             GTEx[28] >= 0.5 | GTEx[29] >= 0.5 | GTEx[30] >= 0.5 |
+                             GTEx[31] >= 0.5 | GTEx[32] >= 0.5 | GTEx[33] >= 0.5 | 
+                             GTEx[34] >= 0.5 | GTEx[35] >= 0.5 | GTEx[36] >= 0.5 | 
+                             GTEx[37] >= 0.5 | GTEx[38] >= 0.5 | GTEx[39] >= 0.5 | 
+                             GTEx[40] >= 0.5 | GTEx[41] >= 0.5 | GTEx[42] >= 0.5 |
+                             GTEx[43] >= 0.5 | GTEx[44] >= 0.5 | GTEx[45] >= 0.5 | 
+                             GTEx[46] >= 0.5 | GTEx[47] >= 0.5 | GTEx[48] >= 0.5 | 
+                             GTEx[49] >= 0.5 | GTEx[50] >= 0.5 | GTEx[51] >= 0.5 | 
+                             GTEx[52] >= 0.5 | GTEx[53] >= 0.5 | GTEx[54] >= 0.5 | 
+                             GTEx[55] >= 0.5 | GTEx[56] >= 0.5 | GTEx[57] >= 0.5 )
+
+## saving results
+write.table(subset_expressed, file = "subset_expressed.txt", sep = "\t",
+            quote = FALSE, row.names = FALSE)
+```
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+## Uploading intermediate documents
+subset_expressed <- read.table("subset_expressed.txt", header = TRUE, 
+                                sep = "\t", dec = ".")
+summary(subset_expressed[c(4:ncol(subset_expressed))])
+```
+
+The dimensions of File 10 are: `r dim(subset_expressed)`
+
+```{r echo=FALSE, eval=TRUE, include=TRUE, fig.height=12, fig.width=7.5, fig.cap= "Heatmap of all expressed genes normalized by row (to see the different expression profile of each gene for the different tissues)."}
+## Heatmap of all expressed genes.
+library(gplots)
+par(oma=c(10,4,4,2))
+subset_mean_tpm <- subset_expressed
+subset_mean_tpm[1] <- NULL
+rownames(subset_mean_tpm) <- subset_mean_tpm$Description
+subset_mean_tpm[1] <- NULL
+subset_mean_tpm[1] <- NULL
+
+heatmap.2(data.matrix(subset_mean_tpm[1:53]), trace='none', scale = "row", 
+          cexRow=0.6, cexCol = 0.6)
+
+```
+
+```{r echo=FALSE, eval=TRUE, include=TRUE, fig.height=12, fig.width=7.5, fig.cap= "Heatmap of all expressed genes normalized by column (to see the different expression profile of the different gene for each tissue)."}
+## Heatmap of all expressed genes.
+library(gplots)
+par(oma=c(10,4,4,2))
+subset_mean_tpm <- subset_expressed
+subset_mean_tpm[1] <- NULL
+rownames(subset_mean_tpm) <- subset_mean_tpm$Description
+subset_mean_tpm[1] <- NULL
+subset_mean_tpm[1] <- NULL
+
+heatmap.2(data.matrix(subset_mean_tpm[1:53]), trace='none', scale = "column", 
+          cexRow=0.6, cexCol = 0.6)
+
+```
+
+
+```{r echo=FALSE, eval=TRUE, include=TRUE, fig.height=4, fig.width=7, fig.cap= "Graphical representation: expression profile of hight expressed genes (>=1000 TMP)."}
+## Graphical representation: expression profile of
+## hight expressed genes (>=1000 TMP)
+
+par(mar = c(10.5, 4, 4, 7.5), xpd=TRUE)
+GTEx1 <- subset_mean_tpm
+subset_mean_tpm2 <- subset(GTEx1, GTEx1[1] >= 1000.0 |GTEx1[2] >= 1000.0 |
+                             GTEx1[3] >= 1000.0 | GTEx1[4] >= 1000.0 | 
+                             GTEx1[5] >= 1000.0 | GTEx1[6] >= 1000.0 | 
+                             GTEx1[7] >= 1000.0 | GTEx1[8] >= 1000.0 | 
+                             GTEx1[9] >= 1000.0 | GTEx1[10] >= 1000.0 | 
+                             GTEx1[11] >= 1000.0 | GTEx1[12] >= 1000.0 | 
+                             GTEx1[13] >= 1000.0 | GTEx1[14] >= 1000.0 |
+                             GTEx1[15] >= 1000.0 | GTEx1[16] >= 1000.0 | 
+                             GTEx1[17] >= 1000.0 | GTEx1[18] >= 1000.0 | 
+                             GTEx1[19] >= 1000.0 | GTEx1[20] >= 1000.0 | 
+                             GTEx1[21] >= 1000.0 | GTEx1[22] >= 1000.0 | 
+                             GTEx1[23] >= 1000.0 | GTEx1[24] >= 1000.0 | 
+                             GTEx1[25] >= 1000.0 | GTEx1[26] >= 1000.0 |
+                             GTEx1[27] >= 1000.0 | GTEx1[28] >= 1000.0 | 
+                             GTEx1[29] >= 1000.0 | GTEx1[30] >= 1000.0 | 
+                             GTEx1[31] >= 1000.0 | GTEx1[32] >= 1000.0 | 
+                             GTEx1[33] >= 1000.0 | GTEx1[34] >= 1000.0 | 
+                             GTEx1[35] >= 1000.0 | GTEx1[36] >= 1000.0 | 
+                             GTEx1[37] >= 1000.0 | GTEx1[38] >= 1000.0 | 
+                             GTEx1[39] >= 1000.0 | GTEx1[40] >= 1000.0 | 
+                             GTEx1[41] >= 1000.0 | GTEx1[42] >= 1000.0 | 
+                             GTEx1[43] >= 1000.0 | GTEx1[44] >= 1000.0 | 
+                             GTEx1[45] >= 1000.0 | GTEx1[46] >= 1000.0 | 
+                             GTEx1[47] >= 1000.0 | GTEx1[48] >= 1000.0 | 
+                             GTEx1[49] >= 1000.0 | GTEx1[50] >= 1000.0 | 
+                             GTEx1[51] >= 1000.0 | GTEx1[52] >= 1000.0 | 
+                             GTEx1[53] >= 1000.0 )
+matplot(t(data.matrix(subset_mean_tpm2[1:53])), type = "b", 
+        col = c(1:ncol(subset_mean_tpm2)), 
+        cex.main = 1, cex.lab = 0.8,	ylab = "TPM", pch=c(15:18,21:25), 
+        main = "TPM/Tissue", axes = FALSE)
+axis(2, cex.axis=0.7)
+axis(side=1,at=1:ncol(subset_mean_tpm2[1:53]), cex.axis=0.6, las = 2,
+     labels=colnames(subset_mean_tpm2[1:53]))
+
+legend("right", inset=c(-0.25, 1), legend=rownames(subset_mean_tpm2[1:53]), 
+       col=c(1:ncol(subset_mean_tpm2)),pch= c(15:18,21:25), 
+       cex = 0.6, bg= ("white"), horiz=F)
+
+```
+
+
+```{r echo=FALSE, eval=TRUE, include=TRUE, fig.height=5, fig.width=7, fig.cap= "Graphical representation: expression profile of medium expressed genes (between 10 and 1000 TMP)."}
+## Graphical representation: expression profile of
+## medium expressed genes (between 10 and 1000 TMP)
+
+subset_mean_tpm3 <- subset(GTEx1, GTEx1[1] >= 10.0 |GTEx1[2] >= 10.0 |
+                             GTEx1[3] >= 10.0 | GTEx1[4] >= 10.0 |
+                             GTEx1[5] >= 10.0 | GTEx1[6] >= 10.0 | 
+                             GTEx1[7] >= 10.0 | GTEx1[8] >= 10.0 | 
+                             GTEx1[9] >= 10.0 | GTEx1[10] >= 10.0 | 
+                             GTEx1[11] >= 10.0 | GTEx1[12] >= 10.0 | 
+                             GTEx1[13] >= 10.0 | GTEx1[14] >= 10.0 |
+                             GTEx1[15] >= 10.0 | GTEx1[16] >= 10.0 | 
+                             GTEx1[17] >= 10.0 | GTEx1[18] >= 10.0 | 
+                             GTEx1[19] >= 10.0 | GTEx1[20] >= 10.0 | 
+                             GTEx1[21] >= 10.0 | GTEx1[22] >= 10.0 | 
+                             GTEx1[23] >= 10.0 | GTEx1[24] >= 10.0 | 
+                             GTEx1[25] >= 10.0 | GTEx1[26] >= 10.0 |
+                             GTEx1[27] >= 10.0 | GTEx1[28] >= 10.0 | 
+                             GTEx1[29] >= 10.0 | GTEx1[30] >= 10.0 | 
+                             GTEx1[31] >= 10.0 | GTEx1[32] >= 10.0 | 
+                             GTEx1[33] >= 10.0 | GTEx1[34] >= 10.0 | 
+                             GTEx1[35] >= 10.0 | GTEx1[36] >= 10.0 | 
+                             GTEx1[37] >= 10.0 | GTEx1[38] >= 10.0 | 
+                             GTEx1[39] >= 10.0 | GTEx1[40] >= 10.0 | 
+                             GTEx1[41] >= 10.0 | GTEx1[42] >= 10.0 | 
+                             GTEx1[43] >= 10.0 | GTEx1[44] >= 10.0 | 
+                             GTEx1[45] >= 10.0 | GTEx1[46] >= 10.0 | 
+                             GTEx1[47] >= 10.0 | GTEx1[48] >= 10.0 | 
+                             GTEx1[49] >= 10.0 | GTEx1[50] >= 10.0 | 
+                             GTEx1[51] >= 10.0 | GTEx1[52] >= 10.0 | 
+                             GTEx1[53] >= 10.0 ) 
+subset_mean_tpm3 <- subset_mean_tpm3[!rownames(subset_mean_tpm3) %in%
+                                       rownames(subset_mean_tpm2), ]
+
+par(mar = c(10.5, 4, 4, 7.5), xpd=TRUE)
+matplot(t(data.matrix(subset_mean_tpm3[1:53])), type = "b", 
+        col = c(1:ncol(subset_mean_tpm3)), 
+        cex.main = 1, cex.lab = 0.8,	ylab = "TPM", pch=c(15:18,21:25), 
+        main = "TPM/Tissue", axes = FALSE)
+axis(2, cex.axis=0.7)
+axis(side=1,at=1:ncol(subset_mean_tpm3[1:53]), cex.axis=0.6, las = 2,
+     labels=colnames(subset_mean_tpm3[1:53]))
+
+legend("right", inset=c(-0.25, 1), legend=rownames(subset_mean_tpm3[1:53]), 
+       col=c(1:ncol(subset_mean_tpm3)),pch= c(15:18,21:25), cex = 0.6, 
+       bg= ("white"), horiz=F)
+
+```
+
+
+Of the `r nrow(mean_tpm_GTEx)` of our set of genes included in GTEx Portal, `r nrow(subset_expressed)` are expressed in at least, one tissue (with >= 0.5 TPM). But the [EMBL-EBI Expression Atlas](https://www.ebi.ac.uk/gxa) classified genes in: 
+ - low expressed (between 0.5 and 10 TPM), 
+ - medium expressed (>=10 to 1000 TPM) and 
+ - high expressed (more than 1000 TPM).
+
+In total, we have `r nrow(subset_mean_tpm2)` high expressed (Figure) and `r nrow(subset_mean_tpm3)` genes medium expressed (Figure)
+
+## File 11: "FINAL_OUTPUT_TABLE.txt"
+
+Finally, the final table `FINAL_OUTPUT_TABLE.txt` will include relevant information from all the analysis perform in this Dynamic Report. The first 6 lines of our finall document will be:
+
+```{r echo=TRUE, eval=TRUE, include=FALSE, message=FALSE, warning=FALSE}
+# FINAL TABLE: FINAL_OUTPUT_TABLE.txt ----
+library(plyr); library(dplyr)
+
+## Cheking genes and creating table
+table_numts_genes <- gene_results[gene_results$ensembl_gene_id
+                                  %in% genes$V1,]
+
+str(table_numts_genes)
+length(unique(table_numts_genes$ensembl_gene_id))
+summary(table_numts_genes)
+
+table_numts_genes <- dplyr::full_join(numts_coord, 
+                         table_numts_genes)
+
+table_numts_genes <- dplyr::full_join(data_joined[c("id", "localization")], 
+                         table_numts_genes)
+table_numts_genes$localization[is.na(table_numts_genes$localization)] <- "partial_gene"
+table_numts_genes <- dplyr::full_join(phenotype_results[c("ensembl_gene_id_version", 
+                                             "gene_biotype", "description")], 
+                               table_numts_genes)
+
+table_numts_go <- dplyr::full_join(go_results[c("ensembl_gene_id_version",
+                                      "name_1006")], 
+                         table_numts_genes)
+
+table_numts_exp <- dplyr::full_join(mean_tpm_GTEx, 
+                         table_numts_go)
+
+table_numts <- table_numts_exp %>% dplyr::select("id", "localization", "chr",
+                                                 "start_n", "end_n", "mt",
+                                                 "start_mt", "end_mt",
+                                                 "hgnc_symbol", "Description",
+                                                 "gene_biotype", "name_1006",
+                                                 "ensembl_gene_id_version", 
+                                                 "transcript_count",
+                                                 "tissue_means", "sum",
+                                                 everything())
+
+## Removing columns
+table_numts$ensembl_gene_id = NULL
+
+## Sorting results (gene_results.txt) ----
+
+table_numts <- table_numts[order(table_numts$id,
+                                 table_numts$chr,
+                                 table_numts$start_n,
+                                 table_numts$start_position),]
+
+table_numts <- table_numts[!duplicated(table_numts), ]
+
+## Saving results
+write.table(table_numts, file="FINAL_OUTPUT_TABLE.txt",
+            sep="\t",quote=F,row.names=F)
+```
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+## Uploading intermediate documents
+table_numts <- read.table("FINAL_OUTPUT_TABLE.txt", header = TRUE, sep = "\t")
+```
+
+The dimensions of File 11 are: `r dim(table_numts)`
+
+```{r echo=FALSE, eval=TRUE, include=TRUE}
+## Showing 6 first data from FINAL TABLE "FINAL_OUTPUT_TABLE.txt"
+head(table_numts)
+```
+
+
+```{r echo=FALSE, eval= TRUE, fig.cap= "Gene biotype and GO term annotated for our list of expressed genes."}
+library(plyr); library(dplyr)
+
+only_expressed <- table_numts[table_numts$ensembl_gene_id
+                                  %in% subset_expressed$GTEx_gene_id_version,]
+## Plotting Gene biotype results 
+par(mfrow=c(1,2))
+par(mar = c(8.5, 2.5, 2.5, 4), xpd=TRUE)
+ensembl_biotype_ex <- na.omit(unique(only_expressed[c("ensembl_gene_id_version", 
+                                                      "gene_biotype")]))
+
+ensembl_go_ex <- na.omit(unique(only_expressed[c("ensembl_gene_id_version", 
+                                                      "name_1006")]))
+colors = c("yellow2","orchid3","orangered3", 
+          "olivedrab3", "lightskyblue3", "plum")
+
+### pie chart
+counts = table(ensembl_biotype_ex$gene_biotype)  ## get counts
+labs = paste(levels(ensembl_biotype$gene_biotype), counts)  ## create labels
+pie(counts, labels = labs, col = colors, cex=0.5)  ## plot
+legend("bottom", inset=c(0,-0.6), labs, cex=0.6, fill=colors)
+
+## Plotting GO results 
+
+ensembl_go <- ensembl_go_ex[complete.cases(ensembl_go_ex), ]
+
+colors = c("aquamarine3","yellow2","azure3", 
+          "darkgoldenrod1", "lawngreen", "plum",
+          "gray9","deeppink1","cornflowerblue", 
+          "antiquewhite3", "slategrey", "tomato")
+
+### pie chart
+counts = table(ensembl_go$name_1006)  ## get counts
+labs = paste(levels(ensembl_go$name_1006), counts)  ## create labels
+pie(counts, labels = labs, col = colors, cex=0.5)  ## plot
+legend("bottom", inset=c(0,-0.6), labs, cex=0.6, fill=colors)
+
+```
+
+
+# References
+
+<div id="refs"></div>
+
+\newpage
+
+```{r, ref.label=knitr::all_labels(), echo=TRUE, eval=FALSE, include=TRUE}
+```
+
+```{r  echo=FALSE, eval=TRUE, include=TRUE}
+# # # # # # # # # # # # sessionInf() # # # # # # # # # # # # 
+devtools::session_info()
+```
