@@ -119,7 +119,7 @@ list.of.packages <- c("rstudioapi", "dplyr", "xlsx", "rJava", "gplots",
                       "devtools", "ggplot2")
 new.packages <- list.of.packages[!(list.of.packages %in% 
                                      installed.packages()[,"Package"])]
-if(length(new.packages)) install.packages(new.packages)
+if(length(new.packages)) install.packages(new.packages,repos = "http://cran.us.r-project.org")
 ```
 
 However, to generate our data, we also need to download special packages from Bioconductor:
